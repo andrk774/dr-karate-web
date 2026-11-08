@@ -1,0 +1,202 @@
+[Info]
+name		= "Dr. Karate Stage Remastered (Day)"
+mugenversion	= 1.1
+author		= "ScepterDPinoy & ShiroTori"
+
+[Camera]
+startx		= 0
+starty		= 0
+boundleft	= -175
+boundright	= 175
+boundhigh	= -170
+boundlow	= -25
+verticalfollow	= 1
+floortension	= 75
+tension		= 50
+zoomin		= 1
+zoomout		= .8
+
+[PlayerInfo]
+p1startx	= -70
+p1starty	= 0
+p1startz	= 0
+p1facing	= 1
+
+p2startx	= 70
+p2starty	= 0
+p2startz	= 0
+p2facing	= -1
+
+leftbound	= -1000
+rightbound	=  1000
+topbound	=  0
+botbound	=  0
+
+[Scaling]
+topz		= 0
+botz		= 50
+topscale	= 1
+botscale	= 1.2
+
+[Bound]
+screenleft	= 15
+screenright	= 15
+
+[StageInfo]
+zoffset		= 200
+autoturn	= 1
+resetBG		= 0
+
+[Shadow]
+intensity	= 96
+color		= 0,0,0
+yscale		= .3
+fade.range	= 0,0
+
+[Music]
+bgmusic		= sound/DrKarate1.mp3
+bgvolume	= 100
+
+[BGdef]
+spr		= stages/DrKarate.sff
+
+[BG Rumble]
+type		= anim
+actionno	= 0
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[Begin action 0]
+
+0,0, 0,0, 7
+0,1, 0,0, 7
+0,2, 0,0, 7
+0,3, 0,0, 7
+0,4, 0,0, 7
+0,5, 0,0, 7
+0,6, 0,0, 7
+0,7, 0,0, 7
+0,8, 0,0, 7
+0,9, 0,0, 7
+
+
+[BG Mountains]
+type		= normal
+spriteno	= 1, 0
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[BG Shima Birds 1]
+type		= anim
+actionno	= 1
+start		= 0,0
+delta		= 1,1
+mask		= 1
+tile		= 1
+tilespacing	= 128
+velocity	= -1
+
+[Begin action 1]
+2,0, 0,0, 7
+2,1, 0,0, 7
+2,2, 0,0, 7
+2,3, 0,0, 7
+2,4, 0,0, 7
+2,5, 0,0, 7
+
+[BG Lucky Cat]
+type		= anim
+actionno	= 2
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[Begin action 2]
+
+3,0, 0,0, 7
+3,1, 0,0, 7
+3,2, 0,0, 7
+3,3, 0,0, 7
+3,4, 0,0, 7
+3,5, 0,0, 7
+3,6, 0,0, 7
+3,7, 0,0, 7
+3,8, 0,0, 7
+3,9, 0,0, 7
+
+[BG Temple]
+type		= anim
+actionno	= 3
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[Begin action 3]
+
+4,0, 0,0, 7
+4,1, 0,0, 7
+4,2, 0,0, 7
+4,3, 0,0, 7
+4,4, 0,0, 7
+4,5, 0,0, 7
+4,6, 0,0, 7
+4,7, 0,0, 7
+4,8, 0,0, 7
+4,9, 0,0, 7
+
+[BG Shima Birds 1]
+type		= anim
+actionno	= 4
+start		= 0,0
+delta		= 1,1
+mask		= 1
+tile		= 1
+tilespacing	= 256
+velocity	= 2
+
+[Begin action 4]
+5,0, 0,0, 7
+5,1, 0,0, 7
+5,2, 0,0, 7
+5,3, 0,0, 7
+5,4, 0,0, 7
+5,5, 0,0, 7
+
+[BG Leaves]
+type		= normal
+spriteno	= 6, 0
+start		= 0,0
+delta		= 1,1
+mask		= 1
+layerno		= 1
+
+
+[BG Intro]
+type		= anim
+actionno	= 5
+start		= 0,0
+delta		= 1,1
+mask		= 1
+tile		= 0,1
+tilespacing	= 0,224
+layerno		= 1
+
+[Begin action 5]
+7,0, 0,0, 8
+7,1, 0,0, 8
+7,2, 0,0, 8
+7,3, 0,0, 8
+7,4, 0,0, 25
+7,5, 0,0, 8
+7,6, 0,0, 8
+7,7, 0,0, 8
+7,8, 0,0, 8
+7,9, 0,0, 8
+7,10, 0,0, 8
+7,11, 0,0, 8
+7,12, 0,0, 8
+7,13, 0,0, 8
+7,14, 0,0, 8
+7,15, 0,0, -1

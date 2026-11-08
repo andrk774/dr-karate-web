@@ -1,0 +1,144 @@
+[Info]
+name		= "Dr. Karate Stage Remastered (Night)"
+mugenversion	= 1.1
+author		= "ScepterDPinoy & ShiroTori"
+
+[Camera]
+startx		= 0
+starty		= 0
+boundleft	= -175
+boundright	= 175
+boundhigh	= -170
+boundlow	= -25
+verticalfollow	= 1
+floortension	= 75
+tension		= 50
+zoomin		= 1
+zoomout		= .8
+
+[PlayerInfo]
+p1startx	= -70
+p1starty	= 0
+p1startz	= 0
+p1facing	= 1
+
+p2startx	= 70
+p2starty	= 0
+p2startz	= 0
+p2facing	= -1
+
+leftbound	= -1000
+rightbound	=  1000
+topbound	=  0
+botbound	=  0
+
+[Scaling]
+topz		= 0
+botz		= 50
+topscale	= 1
+botscale	= 1.2
+
+[Bound]
+screenleft	= 15
+screenright	= 15
+
+[StageInfo]
+zoffset		= 200
+autoturn	= 1
+resetBG		= 0
+
+[Shadow]
+intensity	= 96
+color		= 0,0,0
+yscale		= .3
+fade.range	= 0,0
+
+[Music]
+bgmusic		= sound/DrKarate2.mp3
+bgvolume	= 100
+
+[BGdef]
+spr		= stages/DrKarate.sff
+
+[BG Rumble]
+type		= anim
+actionno	= 0
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[Begin action 0]
+
+0,10, 0,0, 10
+0,11, 0,0, 10
+0,12, 0,0, 10
+0,13, 0,0, 10
+0,14, 0,0, 10
+0,15, 0,0, 10
+0,16, 0,0, 10
+0,17, 0,0, 10
+0,18, 0,0, 10
+0,19, 0,0, 10
+
+[BG Lucky Cat]
+type		= normal
+spriteno	= 3, 10
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[BG Temple]
+type		= anim
+actionno	= 1
+start		= 0,0
+delta		= 1,1
+mask		= 1
+
+[Begin action 1]
+
+4,10, 0,0, 7
+4,11, 0,0, 7
+4,12, 0,0, 7
+4,13, 0,0, 7
+4,14, 0,0, 7
+4,15, 0,0, 7
+4,16, 0,0, 7
+4,17, 0,0, 7
+4,18, 0,0, 7
+4,19, 0,0, 7
+
+[BG Leaves]
+type		= normal
+spriteno	= 6, 1
+start		= 0,0
+delta		= 1,1
+mask		= 1
+layerno		= 1
+
+[BG Intro]
+type		= anim
+actionno	= 5
+start		= 0,0
+delta		= 1,1
+mask		= 1
+tile		= 0,1
+tilespacing	= 0,224
+layerno		= 1
+
+[Begin action 5]
+7,16, 0,0, 8
+7,17, 0,0, 8
+7,18, 0,0, 8
+7,19, 0,0, 8
+7,20, 0,0, 25
+7,21, 0,0, 8
+7,22, 0,0, 8
+7,23, 0,0, 8
+7,24, 0,0, 8
+7,25, 0,0, 8
+7,26, 0,0, 8
+7,27, 0,0, 8
+7,28, 0,0, 8
+7,29, 0,0, 8
+7,30, 0,0, 8
+7,31, 0,0, -1

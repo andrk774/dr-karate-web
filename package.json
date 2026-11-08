@@ -1,0 +1,13 @@
+{
+  "name": "dr-karate-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone browser arcade based on Dr. Karate MUGEN stages",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/engine.test.mjs",
+    "check": "node --check web/game.js && node --check web/engine.js && node scripts/check-assets.mjs",
+    "build": "node scripts/build.mjs"
+  }
+}
