@@ -17,8 +17,22 @@ export const LEVELS = [
     story: 'Кристаллы питают аркадный портал. Пройди тоннель и собери оставшиеся подсказки.',
     pages: [260, 1280, 1940], enemies: [clone(470, 65), clone(1030, 70, 'dr-karate'), clone(1740, 80)] },
   { id: 'dojo', name: 'Додзё Доктора Карате', short: 'Додзё', map: [85, 70], terrain: 3, scene: 'night', length: 1400,
-    story: 'Доктор Карате охраняет выход из игры. Победи его и закрой портал в Гравити Фолз!',
+    story: 'Доктор Карате охраняет выход из додзё. Победи его: за воротами начинается тропа к источнику двойников.',
     pages: [220, 740, 1290], enemies: [clone(430, 70), { x: 1080, hp: 140, art: 'dr-karate', name: 'DR. KARATE', tint: '' }] },
+  { id: 'night-forest', name: 'Ночной лес', short: 'Ночной лес', map: [49, 77], terrain: 0, scene: 'night', atmosphere: 'moonlight', length: 2250,
+    story: 'Следы двойников ведут обратно к Хижине Чудес. Пройди лунную тропу и собери страницы, которые укажут вход под домом.',
+    pages: [250, 1320, 2090], enemies: [
+      { ...clone(460, 70), name: 'ЛЕСНОЙ ДВОЙНИК', tint: 'hue-rotate(180deg)' },
+      { ...clone(1050, 80, 'dr-karate'), name: 'НОЧНОЙ СТРАЖ', tint: 'hue-rotate(210deg)' },
+      { ...clone(1840, 90), name: 'ХРАНИТЕЛЬ ТРОПЫ', tint: 'hue-rotate(180deg)' },
+    ] },
+  { id: 'rift', name: 'Разлом под Хижиной', short: 'Разлом', map: [16, 29], terrain: 2, scene: 'night', atmosphere: 'rift', length: 2400,
+    story: 'Под Хижиной Чудес скрыт источник аркадных двойников. Найди последние страницы, победи Стража разлома и доберись до портала, чтобы закрыть его!',
+    pages: [240, 1320, 2240], enemies: [
+      { ...clone(470, 80), name: 'ЭХО АРКАДЫ', tint: 'hue-rotate(270deg)' },
+      { ...clone(1070, 85, 'dr-karate'), name: 'ДВОЙНИК РАЗЛОМА', tint: 'hue-rotate(270deg)' },
+      { x: 1970, hp: 160, art: 'dr-karate', name: 'СТРАЖ РАЗЛОМА', tint: 'hue-rotate(270deg) saturate(1.4)' },
+    ] },
 ];
 
 export const SAVE_KEY = 'dr-karate-campaign-v1';

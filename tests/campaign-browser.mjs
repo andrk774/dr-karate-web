@@ -19,7 +19,8 @@ try {
     AdventureGame.prototype.update = function (...args) { window.testAdventure = this; return update.apply(this, args); };
   });
   await page.click('#campaign-start');
-  assert.equal(await page.locator('.map-node:disabled').count(), 3);
+  assert.equal(await page.locator('.map-node').count(), 6);
+  assert.equal(await page.locator('.map-node:disabled').count(), 5);
   await page.click('[data-hero="mabel"]');
   assert.equal(await page.locator('[data-hero="mabel"]').getAttribute('aria-pressed'), 'true');
   await page.locator('#campaign-map').screenshot({ path: '.qa/campaign-map.png' });
@@ -34,7 +35,7 @@ try {
   await page.waitForTimeout(200);
   assert.equal(await page.evaluate(() => window.testAdventure.elapsed), before);
   await page.click('#resume');
-  for (let index = 0; index < 4; index++) {
+  for (let index = 0; index < 6; index++) {
     await page.waitForFunction(i => window.testAdventure?.levelIndex === i, index);
     const result = await page.evaluate(() => {
       const g = window.testAdventure;
@@ -48,7 +49,7 @@ try {
     });
     assert.equal(result.phase, 'levelEnd'); assert.equal(result.pages, 3); assert.ok(result.maxX > 640);
     await page.waitForFunction(() => !document.querySelector('#result').hidden);
-    if (index === 3) {
+    if (index === 5) {
       assert.equal(await page.locator('#result-title').textContent(), 'ГОРОД СПАСЁН!');
       await page.locator('#screen').screenshot({ path: '.qa/campaign-finale.png' });
       await page.click('#restart');
@@ -61,13 +62,23 @@ try {
       await page.locator('#screen').screenshot({ path: `.qa/campaign-level-${index + 2}.png` });
     }
   }
-  assert.match(await page.locator('#map-summary').textContent(), /4\/4/);
-  assert.match(await page.locator('#map-summary').textContent(), /12\/12/);
+  assert.match(await page.locator('#map-summary').textContent(), /6\/6/);
+  assert.match(await page.locator('#map-summary').textContent(), /18\/18/);
   await page.reload(); await page.waitForFunction(() => !document.querySelector('#campaign-start').disabled);
   await page.click('#campaign-start');
   assert.equal(await page.locator('.map-node:disabled').count(), 0);
   assert.equal(await page.locator('[data-hero="dipper"]').getAttribute('aria-pressed'), 'true');
-  assert.match(await page.locator('#map-summary').textContent(), /12\/12/);
+  assert.match(await page.locator('#map-summary').textContent(), /18\/18/);
+
+  await page.evaluate(() => localStorage.setItem('dr-karate-campaign-v1', JSON.stringify({ version: 1, hero: 'mabel', bestPages: [3, 3, 3, 3] })));
+  await page.reload(); await page.waitForFunction(() => !document.querySelector('#campaign-start').disabled);
+  await page.click('#campaign-start');
+  assert.equal(await page.locator('.map-node[data-level="4"]').isEnabled(), true);
+  assert.equal(await page.locator('.map-node[data-level="5"]').isEnabled(), false);
+  assert.match(await page.locator('#map-summary').textContent(), /4\/6/);
+  assert.match(await page.locator('#brief-title').textContent(), /Ночной лес/);
+  await page.click('#play-level'); await page.waitForTimeout(2300);
+  assert.equal(await page.locator('#level-title').textContent(), '5 / 6 · Ночной лес');
 
   const mobile = await browser.newPage({ ...devices['iPhone 13'], defaultBrowserType: undefined });
   mobile.on('pageerror', e => errors.push(e.message));
@@ -79,5 +90,5 @@ try {
   assert.equal(await mobile.locator('.touch-controls').isVisible(), true);
   await mobile.screenshot({ path: '.qa/campaign-mobile-level.png', fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('Campaign browser QA passed: hero selection, map locks, pages, scrolling, four level victories, final boss, reload persistence and mobile.');
+  console.log('Campaign browser QA passed: six levels, final boss, all 18 pages, four-level save migration, hero selection, map locks, reload persistence and mobile.');
 } finally { await browser.close(); }

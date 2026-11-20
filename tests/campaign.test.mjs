@@ -27,7 +27,7 @@ test('campaign locks later levels and retains hero and best pages on reload', ()
 test('invalid saves, skipped levels and storage failures do not break the campaign', () => {
   assert.equal(new CampaignProgress(memory('{bad')).completed, 0);
   const p = new CampaignProgress(memory(JSON.stringify({ version: 1, hero: 'unknown', bestPages: [2, null, 3] })));
-  assert.equal(p.hero, 'dipper'); assert.deepEqual(p.bestPages, [2, null, null, null]);
+  assert.equal(p.hero, 'dipper'); assert.deepEqual(p.bestPages, [2, ...Array(LEVELS.length - 1).fill(null)]);
   assert.equal(p.selectHero('unknown'), false); assert.equal(p.recordWin(-1, 3), false);
   const blocked = new CampaignProgress({ getItem() { throw Error('denied'); }, setItem() { throw Error('denied'); } });
   assert.equal(blocked.recordWin(0, 3), true); assert.equal(blocked.unlocked, 1); assert.equal(blocked.saved, false);
@@ -57,7 +57,7 @@ test('leaving an encounter requires victory; defeat ends the level without unloc
   assert.equal(result.winner, 1); assert.equal(g.phase, 'levelEnd'); assert.equal(p.completed, 0);
   g.pause(true); assert.equal(g.paused, false);
 });
-test('all four levels can be traversed, fought and completed; final boss and save are correct', () => {
+test('all six levels can be traversed, fought and completed; final boss and save are correct', () => {
   const storage = memory(), p = new CampaignProgress(storage);
   for (let index = 0; index < LEVELS.length; index++) {
     assert.equal(p.isUnlocked(index), true);
@@ -76,9 +76,20 @@ test('all four levels can be traversed, fought and completed; final boss and sav
     assert.equal(wins, 1); assert.equal(g.enemyIndex, LEVELS[index].enemies.length);
     assert.equal(g.collected.size, 3);
     if (index === 3) { assert.equal(g.enemyName, 'DR. KARATE'); assert.equal(g.fighters[1].maxHp, 140); }
+    if (index === 5) { assert.equal(g.enemyName, 'СТРАЖ РАЗЛОМА'); assert.equal(g.fighters[1].maxHp, 160); }
     advance(g, 3, { right: true }); assert.equal(wins, 1, 'Completion is emitted only once');
   }
   const loaded = new CampaignProgress(storage);
-  assert.equal(loaded.completed, 4); assert.deepEqual(loaded.bestPages, [3, 3, 3, 3]);
-  assert.equal(loaded.unlocked, 3);
+  assert.equal(loaded.completed, 6); assert.deepEqual(loaded.bestPages, [3, 3, 3, 3, 3, 3]);
+  assert.equal(loaded.unlocked, 5);
+});
+test('a four-level save retains all rewards and unlocks the new forest before the rift', () => {
+  const storage = memory(JSON.stringify({ version: 1, hero: 'mabel', bestPages: [3, 2, 1, 3] }));
+  const p = new CampaignProgress(storage);
+  assert.equal(p.hero, 'mabel'); assert.equal(p.completed, 4);
+  assert.deepEqual(p.bestPages, [3, 2, 1, 3, null, null]);
+  assert.equal(p.isUnlocked(4), true); assert.equal(p.isUnlocked(5), false);
+  assert.equal(p.recordWin(5, 3), false);
+  p.recordWin(4, 2); const loaded = new CampaignProgress(storage);
+  assert.deepEqual(loaded.bestPages, [3, 2, 1, 3, 2, null]); assert.equal(loaded.isUnlocked(5), true);
 });

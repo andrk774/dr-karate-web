@@ -250,6 +250,12 @@ function drawHeroCards() {
 
 function renderMap() {
   const nodes = $('map-nodes'); nodes.replaceChildren();
+  const route = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  route.classList.add('map-route'); route.setAttribute('viewBox', '0 0 100 100');
+  route.setAttribute('preserveAspectRatio', 'none'); route.setAttribute('aria-hidden', 'true');
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  line.setAttribute('points', LEVELS.map(level => level.map.join(',')).join(' '));
+  route.append(line); nodes.append(route);
   LEVELS.forEach((level, index) => {
     const button = document.createElement('button');
     button.className = 'map-node'; button.dataset.level = index;
@@ -267,7 +273,7 @@ function renderMap() {
     nodes.append(button);
   });
   drawHeroCards();
-  $('map-summary').textContent = `${HEROES.find(h => h.id === progress.hero).name} · Пройдено ${progress.completed}/${LEVELS.length} · Страниц ${progress.bestPages.reduce((sum, n) => sum + (n ?? 0), 0)}/12${progress.completed === LEVELS.length ? ' · Гравити Фолз спасён!' : ''}`;
+  $('map-summary').textContent = `${HEROES.find(h => h.id === progress.hero).name} · Пройдено ${progress.completed}/${LEVELS.length} · Страниц ${progress.bestPages.reduce((sum, n) => sum + (n ?? 0), 0)}/${LEVELS.reduce((sum, level) => sum + level.pages.length, 0)}${progress.completed === LEVELS.length ? ' · Гравити Фолз спасён!' : ''}`;
   $('brief-title').textContent = LEVELS[selectedLevel].name;
   $('brief-story').textContent = LEVELS[selectedLevel].story;
   $('save-status').textContent = progress.saved ? 'Прогресс сохраняется после завершения уровня.' : 'Сохранение в браузере недоступно. Прогресс хранится до закрытия страницы.';
@@ -450,7 +456,7 @@ function updateHud() {
     if (!game.paused) announcement = game.phase === 'countdown' ? (game.phaseTime > 0.6 ? `ЭТАП ${game.levelIndex + 1}` : 'ВПЕРЁД!') : game.phase === 'encounterEnd' ? 'ПУТЬ ОТКРЫТ' : '';
   }
   if (announcement !== lastAnnouncement) { $('announcement').textContent = announcement; lastAnnouncement = announcement; }
-  if (ready) $('status').textContent = game.paused ? 'ПАУЗА · P — ПРОДОЛЖИТЬ' : !$('campaign-map').hidden ? `КАРТА · ${progress.completed} / 4 УРОВНЯ` : game.phase === 'menu' ? 'ВЫБЕРИ ПРИКЛЮЧЕНИЕ ИЛИ БЫСТРЫЙ БОЙ' : mode === 'campaign' ? `ЭТАП ${game.levelIndex + 1} · СТРАНИЦЫ ${game.collected.size}/3` : game.phase === 'matchEnd' ? 'ПОЕДИНОК ЗАВЕРШЁН' : `ДО ДВУХ ПОБЕД · ${game.wins[0]} : ${game.wins[1]}`;
+  if (ready) $('status').textContent = game.paused ? 'ПАУЗА · P — ПРОДОЛЖИТЬ' : !$('campaign-map').hidden ? `КАРТА · ПРОЙДЕНО ${progress.completed} / ${LEVELS.length}` : game.phase === 'menu' ? 'ВЫБЕРИ ПРИКЛЮЧЕНИЕ ИЛИ БЫСТРЫЙ БОЙ' : mode === 'campaign' ? `ЭТАП ${game.levelIndex + 1} · СТРАНИЦЫ ${game.collected.size}/3` : game.phase === 'matchEnd' ? 'ПОЕДИНОК ЗАВЕРШЁН' : `ДО ДВУХ ПОБЕД · ${game.wins[0]} : ${game.wins[1]}`;
 }
 
 function draw(dt) {
@@ -462,7 +468,7 @@ function draw(dt) {
   else background();
   ctx.save();
   ctx.translate(-Math.round(camera), 0);
-  if (adventure) drawWorldObjects(ctx, game, elapsed);
+  if (adventure) drawWorldObjects(ctx, game, reducedMotion ? 0 : elapsed);
   // Fighters remain visible in the attract screen, behind the menu.
   game.fighters.forEach(drawFighter);
   for (const p of particles) {
@@ -526,7 +532,7 @@ async function load() {
     $('dungeon-start').disabled = false;
     $('pinball-start').disabled = false;
     $('start').textContent = 'Быстрый бой';
-    $('loading-status').textContent = '3 ГЕРОЯ · 4 УРОВНЯ · ПРОГРЕСС СОХРАНЯЕТСЯ';
+    $('loading-status').textContent = `${HEROES.length} ГЕРОЯ · УРОВНЕЙ: ${LEVELS.length} · ПРОГРЕСС СОХРАНЯЕТСЯ`;
   } catch (error) {
     console.error('Cannot load arena:', error);
     $('start').textContent = 'Арена не загрузилась';
