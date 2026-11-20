@@ -85,6 +85,11 @@ try {
   await mobile.goto(url); await mobile.waitForFunction(() => !document.querySelector('#campaign-start').disabled);
   await mobile.tap('#campaign-start'); await mobile.tap('[data-hero="mabel"]');
   assert.ok(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile map fits viewport');
+  assert.ok(await mobile.evaluate(() => {
+    const board = document.querySelector('.map-board').getBoundingClientRect();
+    const section = document.querySelector('#campaign-map').getBoundingClientRect();
+    return board.right <= section.right && board.left >= section.left;
+  }), 'Map board stays inside its mobile container');
   await mobile.screenshot({ path: '.qa/campaign-mobile-map.png', fullPage: true });
   await mobile.tap('#play-level'); await mobile.waitForTimeout(2300);
   assert.equal(await mobile.locator('.touch-controls').isVisible(), true);
