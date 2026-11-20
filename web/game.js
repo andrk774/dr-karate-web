@@ -2,6 +2,8 @@ import { Game, FLOOR } from './engine.js';
 import { loadFighterArt, drawFighterSprite } from './fighters.js';
 import { HEROES, LEVELS, CampaignProgress, AdventureGame } from './campaign.js';
 import { loadWorldArt, drawWorldBackground, drawWorldObjects } from './world.js';
+import { createDungeonUI } from './dungeon-ui.js';
+import { createPinballUI } from './pinball-ui.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game');
@@ -135,6 +137,40 @@ function effect(event) {
 
 let game = new Game({ onEvent: effect });
 
+function drawPortrait(target, id, flipped = false) {
+  const c = target.getContext('2d'), art = artById(id);
+  c.clearRect(0, 0, target.width, target.height);
+  if (!art) return;
+  const f = art.frames[0], scale = target.height * .9 / (f.bottom - f.top + 1);
+  c.save(); c.imageSmoothingEnabled = false;
+  if (flipped) { c.translate(target.width, 0); c.scale(-1, 1); }
+  c.drawImage(art.image, f.x, f.y, f.width, f.height,
+    target.width / 2 - f.anchor * scale, target.height * .95 - f.baseline * scale, f.width * scale, f.height * scale);
+  c.restore();
+}
+const dungeonUI = createDungeonUI({ root: $('dungeon'), storage, drawPortrait, onExit: showMenu });
+const pinballUI = createPinballUI({ root: $('pinball'), storage, onExit: showMenu });
+
+function closeExtraModes() {
+  pinballUI.close();
+  $('dungeon').hidden = true; $('pinball').hidden = true;
+  $('arcade').classList.remove('dungeon-mode', 'pinball-mode');
+}
+function showExtraMode(name) {
+  if (!ready) return;
+  closeExtraModes(); clearInput();
+  game.phase = 'menu'; game.paused = false; mode = name;
+  $('arcade').classList.remove('map-mode', 'campaign-playing');
+  $('arcade').classList.add(name + '-mode');
+  $('campaign-map').hidden = true; $('pause-menu').hidden = true; $('result').hidden = true;
+  $('pause').disabled = true; $(name).hidden = false;
+  $('scene-label').textContent = name === 'dungeon' ? 'ПОДЗЕМЕЛЬЯ И КУБИКИ' : 'ТЕРРОР ПЕРЕКАТИ-ПОЛЕ';
+  (name === 'dungeon' ? dungeonUI : pinballUI).open();
+  $(name).querySelector('.mode-back').focus({ preventScroll: true });
+  $(name).scrollIntoView({ block: 'start', behavior: 'instant' });
+  syncMusic();
+}
+
 function artById(id) { return fighterArt.find(art => art.id === id); }
 function isActive() { return !['menu', 'matchEnd', 'levelEnd'].includes(game.phase); }
 
@@ -149,6 +185,7 @@ function setScene(name) {
 }
 
 function combatView() {
+  closeExtraModes();
   $('arcade').classList.remove('map-mode');
   $('arcade').classList.toggle('campaign-playing', mode === 'campaign');
   $('campaign-map').hidden = true;
@@ -239,6 +276,7 @@ function renderMap() {
 
 function showMap() {
   if (!ready) return;
+  closeExtraModes(); mode = 'campaign';
   game.phase = 'menu'; game.paused = false;
   selectedLevel = Math.min(progress.unlocked, selectedLevel);
   $('arcade').classList.add('map-mode');
@@ -272,6 +310,8 @@ function togglePause(value) {
 }
 
 $('start').addEventListener('click', start);
+$('dungeon-start').addEventListener('click', () => showExtraMode('dungeon'));
+$('pinball-start').addEventListener('click', () => showExtraMode('pinball'));
 $('restart').addEventListener('click', () => {
   if (mode === 'arcade') start();
   else if (levelWon && game.levelIndex === LEVELS.length - 1) showMap();
@@ -381,6 +421,10 @@ function drawFighter(f, index) {
 
 let lastAnnouncement = '';
 function updateHud() {
+  if (mode === 'dungeon' || mode === 'pinball') {
+    $('status').textContent = mode === 'dungeon' ? 'ПОДЗЕМЕЛЬЯ · ТВОЙ ХОД' : 'ТЕРРОР ПЕРЕКАТИ-ПОЛЕ · ПИНБОЛ';
+    return;
+  }
   for (const [i, name] of ['player', 'cpu'].entries()) {
     $(name + '-health').style.width = `${game.fighters[i].hp / game.fighters[i].maxHp * 100}%`;
     $(name + '-hp').textContent = game.fighters[i].hp;
@@ -447,7 +491,7 @@ function frame(now) {
     }
     accumulator -= 1 / 60;
   }
-  draw(game.paused ? 0 : dt);
+  if (mode !== 'dungeon' && mode !== 'pinball') draw(game.paused ? 0 : dt);
   updateHud();
   requestAnimationFrame(frame);
 }
@@ -479,6 +523,8 @@ async function load() {
     $('start').disabled = false;
     $('campaign-start').disabled = false;
     $('open-map').disabled = false;
+    $('dungeon-start').disabled = false;
+    $('pinball-start').disabled = false;
     $('start').textContent = 'Быстрый бой';
     $('loading-status').textContent = '3 ГЕРОЯ · 4 УРОВНЯ · ПРОГРЕСС СОХРАНЯЕТСЯ';
   } catch (error) {

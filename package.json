@@ -6,8 +6,8 @@
   "description": "Standalone browser arcade based on Dr. Karate MUGEN stages",
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "test": "node --test tests/engine.test.mjs tests/fighters.test.mjs tests/campaign.test.mjs",
-    "check": "node --check web/game.js && node --check web/engine.js && node --check web/fighters.js && node --check web/campaign.js && node --check web/world.js && node scripts/check-assets.mjs",
+    "test": "node --test tests/engine.test.mjs tests/fighters.test.mjs tests/campaign.test.mjs tests/dungeon.test.mjs tests/pinball.test.mjs",
+    "check": "node --check web/game.js && node --check web/engine.js && node --check web/fighters.js && node --check web/campaign.js && node --check web/world.js && node --check web/dungeon.js && node --check web/dungeon-ui.js && node --check web/pinball.js && node --check web/pinball-ui.js && node scripts/check-assets.mjs",
     "build": "node scripts/build.mjs"
   }
 }

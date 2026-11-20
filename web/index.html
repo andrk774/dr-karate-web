@@ -9,6 +9,8 @@
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./campaign.css">
+  <link rel="stylesheet" href="./dungeon.css">
+  <link rel="stylesheet" href="./pinball.css">
   <script type="module" src="./game.js"></script>
 </head>
 <body>
@@ -20,7 +22,7 @@
 
     <section class="intro" aria-labelledby="title">
       <div><p class="eyebrow">СТРАННОЕ ЛЕТО. НОВОЕ ПРИКЛЮЧЕНИЕ.</p><h1 id="title">Гравити Фолз. <span>Твой маршрут.</span></h1></div>
-      <p class="intro-note">Три героя. Четыре уровня.<br>И один очень сердитый доктор.</p>
+      <p class="intro-note">Аркада, подземелья и вестерн-пинбол.<br>Одно очень странное лето.</p>
     </section>
 
     <section class="arcade" id="arcade" aria-label="Игра Dr. Karate">
@@ -43,6 +45,8 @@
         <div class="level-brief"><div><h3 id="brief-title"></h3><p id="brief-story"></p><small id="save-status">Прогресс сохраняется после завершения уровня.</small></div><button id="play-level" class="primary">Начать уровень</button></div>
       </section>
 
+      <section id="dungeon" class="dungeon" aria-label="Подземелья и кубики" hidden></section>
+      <section id="pinball" class="pinball" aria-label="Террор перекати-поле" hidden></section>
       <div class="screen" id="screen">
         <canvas id="game" width="640" height="360" tabindex="0" aria-label="Поле боя. A и D — движение, W — прыжок, J — удар рукой, K — ногой, L — блок.">Для игры нужен браузер с поддержкой Canvas.</canvas>
         <div class="hud" id="hud" hidden>
@@ -63,6 +67,7 @@
         <div class="overlay compact" id="result" hidden><div class="menu-eyebrow" id="result-kicker">ПОЕДИНОК ЗАВЕРШЁН</div><h2 id="result-title">ПОБЕДА</h2><p id="result-text"></p><button class="primary" id="restart">Ещё поединок <span>↗</span></button><button class="text-button" id="back-menu">В главное меню</button></div>
       </div>
 
+      <nav class="extra-modes" aria-label="Другие приключения"><button id="dungeon-start" disabled>Подземелья и кубики<small>Пошаговые бои · развилки · дневник</small></button><button id="pinball-start" disabled>Террор перекати-поле<small>Вестерн-пинбол · три шарика · рекорд</small></button></nav>
       <div class="cabinet-bottom"><p><span class="status-dot"></span><span id="status">АРЕНА ГОТОВИТСЯ</span></p><div><button id="open-map" disabled>Карта</button><button id="pause" disabled>Ⅱ <span>Пауза</span><kbd>P</kbd></button><button id="fullscreen" aria-label="Полноэкранный режим">⛶ <span>На весь экран</span></button></div></div>
       <div class="touch-controls" aria-label="Сенсорное управление"><div class="touch-move"><button data-control="left" aria-label="Влево">←</button><button data-control="jump" aria-label="Прыжок">↑</button><button data-control="right" aria-label="Вправо">→</button></div><div class="touch-fight"><button data-control="block">БЛОК</button><button data-control="punch">РУКА</button><button data-control="kick">НОГА</button></div></div>
     </section>
