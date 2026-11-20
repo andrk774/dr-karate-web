@@ -15,6 +15,22 @@ try {
   watch(page);
   await page.goto(url);
   await page.waitForFunction(() => !document.querySelector('#start').disabled);
+  assert.match(await page.locator('#hud').textContent(), /RUMBLE/);
+  assert.match(await page.locator('#hud').textContent(), /DR\. KARATE/);
+  const art = await page.evaluate(async () => {
+    const { loadFighterArt } = await import('./fighters.js');
+    return (await loadFighterArt()).map(sheet => ({
+      id: sheet.id, frames: sheet.frames.length,
+      feet: sheet.frames.map(frame => frame.baseline),
+      widths: sheet.frames.map(frame => frame.right - frame.left),
+    }));
+  });
+  assert.equal(art.length, 2);
+  for (const sheet of art) {
+    assert.equal(sheet.frames, 12);
+    assert.ok(sheet.widths.every(width => width > 20), `All ${sheet.id} poses contain a visible fighter`);
+    assert.equal(sheet.feet[8], sheet.feet[0], 'Jump uses standing origin, preserving tucked feet');
+  }
   await page.screenshot({ path: '.qa/desktop-menu.png', fullPage: true });
   await page.selectOption('#difficulty', 'easy');
   await page.click('#start');
@@ -73,6 +89,12 @@ try {
   await missing.waitForFunction(() => document.querySelector('#start').textContent.includes('не загрузилась'));
   assert.equal(await missing.locator('#start').isDisabled(), true, 'Failed load must not start a broken game');
   await missing.close();
+  const missingFighter = await browser.newPage();
+  await missingFighter.route('**/fighters/rumble.png', route => route.abort());
+  await missingFighter.goto(url);
+  await missingFighter.waitForFunction(() => document.querySelector('#start').textContent.includes('не загрузилась'));
+  assert.equal(await missingFighter.locator('#start').isDisabled(), true, 'Missing fighter art prevents an invisible fight');
+  await missingFighter.close();
   assert.deepEqual(errors, []);
   console.log('Browser QA passed: desktop combat, pause, audio, night, focus, mobile controls, load failure.');
 } finally { await browser.close(); }

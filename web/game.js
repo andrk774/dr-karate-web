@@ -1,4 +1,5 @@
-import { Game, FLOOR, ATTACKS } from './engine.js';
+import { Game, FLOOR } from './engine.js';
+import { loadFighterArt, drawFighterSprite } from './fighters.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game');
@@ -10,6 +11,7 @@ const pointers = new Map();
 const bindings = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
   KeyW: 'jump', ArrowUp: 'jump', Space: 'jump', KeyJ: 'punch', KeyK: 'kick', KeyL: 'block', ShiftLeft: 'block', ShiftRight: 'block' };
 let sprites = {};
+let fighterArt = [];
 let scene = 'day';
 let ready = false;
 let elapsed = 0;
@@ -225,88 +227,8 @@ function background(foreground = false) {
   }
 }
 
-function line(points, color, width) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.lineCap = 'square';
-  ctx.lineJoin = 'miter';
-  ctx.beginPath();
-  points.forEach(([x, y], i) => i ? ctx.lineTo(Math.round(x), Math.round(y)) : ctx.moveTo(Math.round(x), Math.round(y)));
-  ctx.stroke();
-}
-
-function limb(points, color, width = 8) {
-  line(points, '#1c2a2c', width + 4);
-  line(points, color, width);
-}
-
 function drawFighter(f, index) {
-  const uniform = index === 0 ? '#f1ead1' : '#7197a1';
-  const shadow = index === 0 ? '#b4baab' : '#426875';
-  const belt = index === 0 ? '#be4635' : '#edd6a2';
-  const skin = index === 0 ? '#edb67e' : '#c78b62';
-  const bob = f.y < 0 ? 0 : f.moving ? Math.sin(f.walk * 2) * 1.5 : Math.sin(elapsed * 4 + index) * 1.1;
-  ctx.fillStyle = '#10291d55';
-  ctx.beginPath();
-  ctx.ellipse(f.x, FLOOR + 2, Math.max(11, 24 + f.y / 8), 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.save();
-  ctx.translate(Math.round(f.x), Math.round(FLOOR + f.y + bob));
-  ctx.scale(f.facing, 1);
-  if (f.hp === 0) { ctx.translate(0, -9); ctx.rotate(-Math.PI / 2); }
-  if (f.stun > 0 && !f.blocking) ctx.rotate(-0.12);
-  let legBack = [[-5, -31], [-13, -18], [-18, -5]];
-  let legFront = [[5, -31], [13, -18], [19, -4]];
-  if (f.moving && !f.attack) {
-    const step = Math.sin(f.walk) * 11;
-    legBack = [[-5, -31], [-8 - step / 2, -18], [-8 - step, -4]];
-    legFront = [[5, -31], [8 + step / 2, -18], [8 + step, -4]];
-  }
-  if (f.y < 0) {
-    legBack = [[-5, -31], [-19, -22], [-13, -10]];
-    legFront = [[5, -31], [16, -36], [23, -24]];
-  }
-  let backArm = [[-7, -53], [-15, -40], [-6, -40]];
-  let frontArm = [[9, -54], [18, -44], [28, -51]];
-  if (f.blocking) { backArm = [[-7, -53], [3, -47], [14, -65]]; frontArm = [[9, -54], [20, -53], [23, -66]]; }
-  if (f.attack) {
-    const a = ATTACKS[f.attack];
-    const extension = Math.sin(Math.min(1, f.attackTime / (a.windup + a.active)) * Math.PI / 2);
-    const recover = f.attackTime > a.windup + a.active ? Math.max(0, 1 - (f.attackTime - a.windup - a.active) / (a.duration - a.windup - a.active)) : 1;
-    const reach = extension * recover;
-    if (f.attack === 'punch') frontArm = [[9, -54], [20 + reach * 10, -51 - reach * 4], [27 + reach * 29, -51 - reach * 5]];
-    else legFront = [[5, -31], [15 + reach * 20, -20 - reach * 16], [19 + reach * 57, -4 - reach * 36]];
-  }
-  limb(legBack, shadow, 10);
-  limb(backArm, shadow, 7);
-  limb(legFront, uniform, 11);
-  for (const leg of [legBack, legFront]) {
-    const end = leg[2];
-    ctx.fillStyle = '#1c2a2c'; ctx.fillRect(Math.round(end[0] - 5), Math.round(end[1] - 2), 15, 7);
-    ctx.fillStyle = skin; ctx.fillRect(Math.round(end[0] - 3), Math.round(end[1] - 1), 12, 5);
-  }
-  // Gi jacket, lapels and belt, drawn on a deliberate low-resolution grid.
-  ctx.fillStyle = '#1c2a2c'; ctx.fillRect(-12, -60, 26, 32);
-  ctx.fillStyle = uniform; ctx.fillRect(-10, -58, 22, 27);
-  ctx.fillStyle = shadow; ctx.fillRect(-10, -54, 5, 22);
-  line([[-7, -58], [3, -45], [9, -58]], '#d2c7b1', 3);
-  ctx.fillStyle = skin; ctx.fillRect(-3, -63, 10, 9);
-  ctx.fillStyle = '#1c2a2c'; ctx.fillRect(-10, -34, 23, 6);
-  ctx.fillStyle = belt; ctx.fillRect(-10, -34, 23, 4); ctx.fillRect(4, -32, 4, 14); ctx.fillRect(9, -31, 3, 10);
-  limb(frontArm, uniform, 8);
-  for (const arm of [backArm, frontArm]) {
-    const end = arm[2];
-    ctx.fillStyle = '#1c2a2c'; ctx.fillRect(Math.round(end[0] - 4), Math.round(end[1] - 5), 10, 10);
-    ctx.fillStyle = skin; ctx.fillRect(Math.round(end[0] - 2), Math.round(end[1] - 3), 7, 6);
-  }
-  ctx.fillStyle = '#1c2a2c'; ctx.fillRect(-9, -82, 22, 22); ctx.fillRect(9, -75, 6, 11);
-  ctx.fillStyle = skin; ctx.fillRect(-6, -78, 17, 16); ctx.fillRect(10, -73, 4, 7);
-  ctx.fillStyle = '#f6ce91'; ctx.fillRect(3, -75, 7, 7);
-  ctx.fillStyle = '#263231'; ctx.fillRect(-9, -83, 21, 8); ctx.fillRect(-9, -77, 5, 10); ctx.fillRect(-5, -86, 12, 4);
-  ctx.fillStyle = belt; ctx.fillRect(-9, -77, 21, 3);
-  line([[-9, -75], [-18, -74 + Math.sin(elapsed * 8) * 2], [-22, -69]], belt, 3);
-  ctx.fillStyle = '#27312d'; ctx.fillRect(7, -71, 3, 2); ctx.fillRect(8, -65, 4, 2);
-  ctx.restore();
+  if (fighterArt[index]) drawFighterSprite(ctx, f, fighterArt[index], elapsed);
 }
 
 let lastAnnouncement = '';
@@ -321,7 +243,7 @@ function updateHud() {
   let announcement = '';
   if (!game.paused) {
     if (game.phase === 'countdown') announcement = game.phaseTime > 0.75 ? `РАУНД ${game.round}` : 'В БОЙ!';
-    if (game.phase === 'roundEnd') announcement = game.roundWinner === -1 ? 'НИЧЬЯ' : game.roundWinner === 0 ? 'РАУНД ЗА ТОБОЙ' : 'РАУНД ЗА РЭНОМ';
+    if (game.phase === 'roundEnd') announcement = game.roundWinner === -1 ? 'НИЧЬЯ' : game.roundWinner === 0 ? 'РАУНД ЗА ТОБОЙ' : 'РАУНД ЗА ДОКТОРОМ';
   }
   if (announcement !== lastAnnouncement) { $('announcement').textContent = announcement; lastAnnouncement = announcement; }
   if (ready) $('status').textContent = game.paused ? 'ПАУЗА · P — ПРОДОЛЖИТЬ' : game.phase === 'menu' ? '1 ИГРОК · ПРОТИВ КОМПЬЮТЕРА' : game.phase === 'matchEnd' ? 'ПОЕДИНОК ЗАВЕРШЁН' : `ДО ДВУХ ПОБЕД · ${game.wins[0]} : ${game.wins[1]}`;
@@ -366,6 +288,9 @@ requestAnimationFrame(frame);
 
 async function load() {
   try {
+    // Both fighter sheets and stage assets must be ready before combat starts.
+    const fighterPromise = loadFighterArt();
+    fighterPromise.catch(() => {}); // Handled together with the stage load below.
     const response = await fetch(new URL('./assets/sprites.json', import.meta.url));
     if (!response.ok) throw new Error(`Manifest HTTP ${response.status}`);
     const manifest = await response.json();
@@ -378,6 +303,7 @@ async function load() {
       $('loading-status').textContent = `Подготавливаем арену · ${Math.round(++loaded / entries.length * 100)}%`;
       return [key, { ...data, image }];
     }));
+    fighterArt = await fighterPromise;
     sprites = Object.fromEntries(images);
     ready = true;
     $('start').disabled = false;
