@@ -15,7 +15,7 @@ try {
   watch(page);
   await page.goto(url);
   await page.waitForFunction(() => !document.querySelector('#start').disabled);
-  assert.match(await page.locator('#hud').textContent(), /RUMBLE/);
+  assert.match(await page.locator('#hud').textContent(), /ДИППЕР/);
   assert.match(await page.locator('#hud').textContent(), /DR\. KARATE/);
   const art = await page.evaluate(async () => {
     const { loadFighterArt } = await import('./fighters.js');
@@ -25,7 +25,7 @@ try {
       widths: sheet.frames.map(frame => frame.right - frame.left),
     }));
   });
-  assert.equal(art.length, 2);
+  assert.equal(art.length, 4);
   for (const sheet of art) {
     assert.equal(sheet.frames, 12);
     assert.ok(sheet.widths.every(width => width > 20), `All ${sheet.id} poses contain a visible fighter`);

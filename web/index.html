@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eeeade">
-  <meta name="description" content="Dr. Karate — пиксельный аркадный бой в браузере. Две сцены, музыка и поединок с компьютером.">
+  <meta name="description" content="Диппер, Мэйбл и Рамбл: карта Гравити Фолз, четыре уровня и бой с Доктором Карате. Браузерное приключение.">
   <title>Dr. Karate — Browser Arcade</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./campaign.css">
   <script type="module" src="./game.js"></script>
 </head>
 <body>
@@ -18,8 +19,8 @@
     </header>
 
     <section class="intro" aria-labelledby="title">
-      <div><p class="eyebrow">МАЛЕНЬКОЕ ДОДЗЁ. БОЛЬШОЙ ПОЕДИНОК.</p><h1 id="title">Искусство <span>первого удара.</span></h1></div>
-      <p class="intro-note">Старый добрый аркадный бой.<br>Прямо здесь. Прямо в браузере.</p>
+      <div><p class="eyebrow">СТРАННОЕ ЛЕТО. НОВОЕ ПРИКЛЮЧЕНИЕ.</p><h1 id="title">Гравити Фолз. <span>Твой маршрут.</span></h1></div>
+      <p class="intro-note">Три героя. Четыре уровня.<br>И один очень сердитый доктор.</p>
     </section>
 
     <section class="arcade" id="arcade" aria-label="Игра Dr. Karate">
@@ -27,33 +28,49 @@
         <div class="settings"><div class="segmented" role="group" aria-label="Время суток"><button id="day" class="selected" aria-pressed="true">День</button><button id="night" aria-pressed="false">Ночь</button></div><button class="sound" id="sound" aria-label="Включить звук" aria-pressed="false">♪ <span>Звук выкл.</span></button></div>
       </div>
 
+      <section id="campaign-map" class="campaign-map" aria-label="Карта приключений" hidden>
+        <div class="map-heading"><div><p class="eyebrow">ДНЕВНИК ПРИКЛЮЧЕНИЯ</p><h2>Добро пожаловать в Гравити Фолз</h2></div><button id="map-menu" class="map-close">Главное меню</button></div>
+        <div class="hero-picker" role="group" aria-label="Выбор героя">
+          <button data-hero="dipper" aria-pressed="true"><canvas width="110" height="100" aria-hidden="true"></canvas><span><strong>Диппер</strong><small>Кепка, дневник и план.</small></span></button>
+          <button data-hero="mabel" aria-pressed="false"><canvas width="110" height="100" aria-hidden="true"></canvas><span><strong>Мэйбл</strong><small>Радужный боевой настрой.</small></span></button>
+          <button data-hero="rumble" aria-pressed="false"><canvas width="110" height="100" aria-hidden="true"></canvas><span><strong>Рамбл</strong><small>Аркадная легенда.</small></span></button>
+        </div>
+        <p id="map-summary" class="map-summary" aria-live="polite"></p>
+        <div class="map-board">
+          <img src="./assets/adventure/map.png" width="1672" height="941" alt="Карта леса, города, шахты и додзё, соединённых дорогой">
+          <div id="map-nodes"></div>
+        </div>
+        <div class="level-brief"><div><h3 id="brief-title"></h3><p id="brief-story"></p><small id="save-status">Прогресс сохраняется после завершения уровня.</small></div><button id="play-level" class="primary">Начать уровень</button></div>
+      </section>
+
       <div class="screen" id="screen">
         <canvas id="game" width="640" height="360" tabindex="0" aria-label="Поле боя. A и D — движение, W — прыжок, J — удар рукой, K — ногой, L — блок.">Для игры нужен браузер с поддержкой Canvas.</canvas>
         <div class="hud" id="hud" hidden>
-          <div class="fighter-hud"><div class="fighter-label"><span>RUMBLE <b>YOU</b></span><span id="player-hp">100</span></div><div class="health"><div id="player-health"></div></div><div class="rounds" id="player-rounds"><i></i><i></i></div></div>
+          <div class="fighter-hud"><div class="fighter-label"><span><span id="player-name">ДИППЕР</span> <b>YOU</b></span><span id="player-hp">100</span></div><div class="health"><div id="player-health"></div></div><div class="rounds" id="player-rounds"><i></i><i></i></div><div id="journal-count" class="journey-counter" hidden></div></div>
           <div class="timer"><span id="timer">60</span><small id="round">ROUND 01</small></div>
-          <div class="fighter-hud rival"><div class="fighter-label"><span id="cpu-hp">100</span><span><b>CPU</b> DR. KARATE</span></div><div class="health"><div id="cpu-health"></div></div><div class="rounds" id="cpu-rounds"><i></i><i></i></div></div>
+          <div class="fighter-hud rival" id="enemy-hud"><div class="fighter-label"><span id="cpu-hp">100</span><span><b>CPU</b> <span id="cpu-name">DR. KARATE</span></span></div><div class="health"><div id="cpu-health"></div></div><div class="rounds" id="cpu-rounds"><i></i><i></i></div><div id="encounter-count" class="journey-counter" hidden></div></div>
         </div>
+        <div id="mission-bar" class="mission-bar" hidden><strong id="level-title"></strong><span id="mission"></span></div>
         <div class="screen-shade" id="shade"></div>
         <div class="overlay" id="menu">
-          <div class="menu-eyebrow">一対一 <span>ОДИН НА ОДИН</span></div>
-          <h2>DR. KARATE</h2><p>Спокойный дух.<br>Быстрые руки.</p>
+          <div class="menu-eyebrow">冒険 <span>ГРАВИТИ ФОЛЗ</span></div>
+          <h2>DR. KARATE</h2><p>Диппер, Мэйбл и Рамбл.<br>Одно странное приключение.</p>
           <div class="start-options"><label for="difficulty">Соперник</label><select id="difficulty"><option value="easy">Новичок</option><option value="normal" selected>Боец</option></select></div>
-          <button class="primary" id="start" disabled>Загрузка арены…</button><small class="menu-hint" id="loading-status" role="status">Подготавливаем спрайты</small>
+          <div class="menu-actions"><button class="primary" id="campaign-start" disabled>Карта приключений</button><button class="quick-play" id="start" disabled>Загрузка арены…</button></div><small class="menu-hint" id="loading-status" role="status">Подготавливаем спрайты</small>
         </div>
         <div class="announcement" id="announcement" aria-live="polite"></div>
-        <div class="overlay compact" id="pause-menu" hidden><div class="menu-eyebrow">ВЫДОХНИ</div><h2>ПАУЗА</h2><p>Додзё подождёт.</p><button class="primary" id="resume">Продолжить <span>→</span></button></div>
+        <div class="overlay compact" id="pause-menu" hidden><div class="menu-eyebrow">ВЫДОХНИ</div><h2>ПАУЗА</h2><p>Приключение подождёт.</p><button class="primary" id="resume">Продолжить</button><button id="pause-map" class="text-button" hidden>На карту (уровень начнётся заново)</button></div>
         <div class="overlay compact" id="result" hidden><div class="menu-eyebrow" id="result-kicker">ПОЕДИНОК ЗАВЕРШЁН</div><h2 id="result-title">ПОБЕДА</h2><p id="result-text"></p><button class="primary" id="restart">Ещё поединок <span>↗</span></button><button class="text-button" id="back-menu">В главное меню</button></div>
       </div>
 
-      <div class="cabinet-bottom"><p><span class="status-dot"></span><span id="status">АРЕНА ГОТОВИТСЯ</span></p><div><button id="pause" disabled>Ⅱ <span>Пауза</span><kbd>P</kbd></button><button id="fullscreen" aria-label="Полноэкранный режим">⛶ <span>На весь экран</span></button></div></div>
+      <div class="cabinet-bottom"><p><span class="status-dot"></span><span id="status">АРЕНА ГОТОВИТСЯ</span></p><div><button id="open-map" disabled>Карта</button><button id="pause" disabled>Ⅱ <span>Пауза</span><kbd>P</kbd></button><button id="fullscreen" aria-label="Полноэкранный режим">⛶ <span>На весь экран</span></button></div></div>
       <div class="touch-controls" aria-label="Сенсорное управление"><div class="touch-move"><button data-control="left" aria-label="Влево">←</button><button data-control="jump" aria-label="Прыжок">↑</button><button data-control="right" aria-label="Вправо">→</button></div><div class="touch-fight"><button data-control="block">БЛОК</button><button data-control="punch">РУКА</button><button data-control="kick">НОГА</button></div></div>
     </section>
 
-    <section class="guide" aria-labelledby="guide-title"><div class="guide-heading"><p class="eyebrow">01 / ОСНОВЫ</p><h2 id="guide-title">Твой ход.</h2><p>Две победы в раундах — и додзё твоё.<br>Держи дистанцию. Лови момент.</p></div>
+    <section class="guide" aria-labelledby="guide-title"><div class="guide-heading"><p class="eyebrow">КАК ИГРАТЬ</p><h2 id="guide-title">Вперёд, к тайнам.</h2><p>Иди вправо, побеждай двойников и собирай страницы.<br>Пройди уровень, чтобы открыть следующий.</p></div>
       <div class="control-guide"><div class="control-item"><div><kbd>A</kbd><kbd>D</kbd><span class="or">/</span><kbd>←</kbd><kbd>→</kbd></div><span>Движение</span></div><div class="control-item"><div><kbd>W</kbd><span class="or">/</span><kbd>↑</kbd><span class="or">/</span><kbd>SPACE</kbd></div><span>Прыжок</span></div><div class="control-item"><div><kbd>J</kbd><span class="key-label">РУКА</span><kbd>K</kbd><span class="key-label">НОГА</span></div><span>Быстрый удар / сильный удар</span></div><div class="control-item"><div><kbd>L</kbd><span class="or">/</span><kbd>SHIFT</kbd></div><span>Блок — удерживай</span></div></div>
     </section>
-    <footer><span>DR. KARATE <span class="footer-slash">/</span> СДЕЛАНО ДЛЯ ИГРЫ.</span><span>Сцены: ScepterDPinoy &amp; ShiroTori · Веб-адаптация</span><span class="footer-kanji" aria-hidden="true">空手道</span></footer>
+    <footer><span>DR. KARATE <span class="footer-slash">/</span> СДЕЛАНО ДЛЯ ИГРЫ.</span><span>Додзё: ScepterDPinoy &amp; ShiroTori · Фан-игра</span><span class="footer-kanji" aria-hidden="true">空手道</span></footer>
   </main>
   <noscript><p class="noscript">Включите JavaScript, чтобы играть в Dr. Karate.</p></noscript>
 </body>

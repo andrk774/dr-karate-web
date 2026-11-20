@@ -8,6 +8,11 @@ export const FIGHTER_ART = [
     // The KO head extends slightly left of its nominal grid cell. Use explicit
     // atlas rectangles so the full head appears only in the knockout frame.
     regions: { 10: { right: 0.91 }, 11: { left: -0.067, top: 0.58 } } },
+  { id: 'dipper', name: 'ДИППЕР', file: 'dipper.png', height: 90,
+    anchors: [0.48, 0.48, 0.48, 0.48, 0.46, 0.46, 0.43, 0.32, 0.48, 0.48, 0.53, 0.50] },
+  { id: 'mabel', name: 'МЭЙБЛ', file: 'mabel.png', height: 90,
+    anchors: [0.48, 0.48, 0.48, 0.48, 0.46, 0.46, 0.43, 0.32, 0.48, 0.48, 0.53, 0.50],
+    regions: { 10: { right: 0.93 }, 11: { left: -0.04, top: 0.58 } } },
 ];
 export const FRAME = Object.freeze({
   idle: 0, breathe: 1, walkA: 2, walkB: 3,
@@ -81,12 +86,12 @@ export async function loadFighterArt() {
   }));
 }
 
-export function drawFighterSprite(ctx, f, art, time) {
+export function drawFighterSprite(ctx, f, art, time, worldWidth = 640) {
   const frameIndex = fighterFrame(f, time);
   const frame = art.frames[frameIndex];
   const scale = art.scale;
   const knockedOut = frameIndex === FRAME.knockout;
-  const x = knockedOut ? Math.max(58, Math.min(582, f.x)) : f.x;
+  const x = knockedOut ? Math.max(58, Math.min(worldWidth - 58, f.x)) : f.x;
   ctx.save();
   ctx.fillStyle = '#10291d55';
   ctx.beginPath();
@@ -94,6 +99,7 @@ export function drawFighterSprite(ctx, f, art, time) {
   ctx.fill();
   ctx.translate(Math.round(x), Math.round(FLOOR + (knockedOut ? 0 : f.y)));
   ctx.scale(f.facing, 1);
+  if (f.tint) ctx.filter = f.tint;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(art.image, frame.x, frame.y, frame.width, frame.height,
     -Math.round(frame.anchor * scale), -Math.round(frame.baseline * scale),

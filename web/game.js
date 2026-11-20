@@ -1,5 +1,7 @@
 import { Game, FLOOR } from './engine.js';
 import { loadFighterArt, drawFighterSprite } from './fighters.js';
+import { HEROES, LEVELS, CampaignProgress, AdventureGame } from './campaign.js';
+import { loadWorldArt, drawWorldBackground, drawWorldObjects } from './world.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game');
@@ -12,6 +14,16 @@ const bindings = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: '
   KeyW: 'jump', ArrowUp: 'jump', Space: 'jump', KeyJ: 'punch', KeyK: 'kick', KeyL: 'block', ShiftLeft: 'block', ShiftRight: 'block' };
 let sprites = {};
 let fighterArt = [];
+let worldArt;
+let storage;
+try { storage = window.localStorage; } catch { /* The game also works without storage. */ }
+const progress = new CampaignProgress(storage);
+let selectedLevel = progress.unlocked;
+let mode = 'arcade';
+let camera = 0;
+let levelWon = false;
+let toast = '';
+let toastUntil = 0;
 let scene = 'day';
 let ready = false;
 let elapsed = 0;
@@ -84,10 +96,36 @@ function effect(event) {
   if (event.type === 'swing') tone(220, 0.035, 'triangle', 0.015);
   if (event.type === 'fight') tone(680, 0.15);
   if (event.type === 'roundEnd') tone(220, 0.4, 'triangle');
+  if (event.type === 'page') {
+    tone(900, 0.2, 'triangle');
+    toast = `Страница найдена! ${event.count} / 3`;
+    toastUntil = elapsed + 2;
+  }
+  if (event.type === 'encounterEnd') {
+    tone(500, 0.2, 'triangle');
+    toast = 'Победа над двойником · +15 здоровья';
+    toastUntil = elapsed + 2;
+  }
+  if (event.type === 'levelEnd') {
+    levelWon = event.winner === 0;
+    const final = event.index === LEVELS.length - 1;
+    if (levelWon) progress.recordWin(event.index, event.pages);
+    $('result-kicker').textContent = levelWon ? (final ? 'АРКАДНЫЙ ПОРТАЛ ЗАКРЫТ' : 'НОВЫЙ МАРШРУТ ОТКРЫТ') : 'ПРИКЛЮЧЕНИЕ ПРОДОЛЖАЕТСЯ';
+    $('result-title').textContent = levelWon ? (final ? 'ГОРОД СПАСЁН!' : 'УРОВЕНЬ ПРОЙДЕН') : 'ЕЩЁ ПОПЫТКА';
+    $('result-text').textContent = levelWon ? `${LEVELS[event.index].name} · Страницы дневника: ${event.pages}/3. ${progress.saved ? 'Прогресс сохранён.' : 'Прогресс доступен до закрытия страницы.'}` : 'Блокируй атаки и отвечай ударом. Уже открытые уровни остаются доступными.';
+    $('restart').textContent = levelWon ? (final ? 'Карта приключений' : 'Следующий уровень') : 'Повторить уровень';
+    $('back-menu').textContent = 'На карту';
+    $('result').hidden = false;
+    $('pause').disabled = true;
+    $('restart').focus({ preventScroll: true });
+    clearInput();
+  }
   if (event.type === 'matchEnd') {
     $('result-title').textContent = event.winner === 0 ? 'ТВОЯ ПОБЕДА!' : 'ЕЩЁ ОДИН ШАНС';
     $('result-kicker').textContent = event.winner === 0 ? 'ДОДЗЁ ПРИЗНАЁТ МАСТЕРА' : 'МАСТЕРСТВО ПРИХОДИТ С ПРАКТИКОЙ';
     $('result-text').textContent = `${game.wins[0]} : ${game.wins[1]} · ${event.winner === 0 ? 'Красивый бой. Повторим?' : 'Блокируй удары и отвечай, пока соперник открыт.'}`;
+    $('restart').textContent = 'Ещё поединок';
+    $('back-menu').textContent = 'В главное меню';
     $('result').hidden = false;
     $('pause').disabled = true;
     $('restart').focus({ preventScroll: true });
@@ -95,10 +133,41 @@ function effect(event) {
   }
 }
 
-const game = new Game({ onEvent: effect });
+let game = new Game({ onEvent: effect });
+
+function artById(id) { return fighterArt.find(art => art.id === id); }
+function isActive() { return !['menu', 'matchEnd', 'levelEnd'].includes(game.phase); }
+
+function setScene(name) {
+  scene = name;
+  for (const choice of ['day', 'night']) {
+    $(choice).classList.toggle('selected', choice === name);
+    $(choice).setAttribute('aria-pressed', String(choice === name));
+  }
+  $('scene-label').textContent = mode === 'campaign' && game.level ? game.level.name : scene === 'day' ? 'ДНЕВНОЕ ДОДЗЁ' : 'НОЧНОЕ ДОДЗЁ';
+  syncMusic();
+}
+
+function combatView() {
+  $('arcade').classList.remove('map-mode');
+  $('arcade').classList.toggle('campaign-playing', mode === 'campaign');
+  $('campaign-map').hidden = true;
+  $('mission-bar').hidden = mode !== 'campaign';
+  $('pause-map').hidden = mode !== 'campaign';
+  document.querySelector('.segmented').hidden = mode === 'campaign';
+  for (const name of ['player-rounds', 'cpu-rounds']) $(name).hidden = mode === 'campaign';
+  for (const name of ['journal-count', 'encounter-count']) $(name).hidden = mode !== 'campaign';
+  particles = [];
+  toastUntil = 0;
+  camera = 0;
+  $('pause').querySelector('span').textContent = 'Пауза';
+}
 
 function start() {
   if (!ready) return;
+  mode = 'arcade';
+  game = new Game({ onEvent: effect });
+  combatView();
   $('menu').hidden = true;
   $('result').hidden = true;
   $('pause-menu').hidden = true;
@@ -109,6 +178,87 @@ function start() {
   game.start($('difficulty').value);
   canvas.focus({ preventScroll: true });
   syncMusic();
+}
+
+function startCampaign(index = selectedLevel) {
+  if (!ready || !progress.isUnlocked(index)) return;
+  selectedLevel = index;
+  mode = 'campaign';
+  game = new AdventureGame({ onEvent: effect });
+  game.startLevel(index, $('difficulty').value);
+  combatView();
+  setScene(game.level.scene);
+  $('menu').hidden = true;
+  $('result').hidden = true;
+  $('pause-menu').hidden = true;
+  $('shade').hidden = true;
+  $('hud').hidden = false;
+  $('pause').disabled = false;
+  $('level-title').textContent = `${index + 1} / ${LEVELS.length} · ${game.level.name}`;
+  clearInput();
+  canvas.focus({ preventScroll: true });
+}
+
+function drawHeroCards() {
+  document.querySelectorAll('[data-hero]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.hero === progress.hero));
+    const art = artById(button.dataset.hero);
+    if (!art) return;
+    const target = button.querySelector('canvas'), c = target.getContext('2d'), f = art.frames[0];
+    c.clearRect(0, 0, target.width, target.height); c.imageSmoothingEnabled = false;
+    const scale = 87 / (f.bottom - f.top + 1);
+    c.drawImage(art.image, f.x, f.y, f.width, f.height, 55 - f.anchor * scale, 97 - f.baseline * scale, f.width * scale, f.height * scale);
+  });
+}
+
+function renderMap() {
+  const nodes = $('map-nodes'); nodes.replaceChildren();
+  LEVELS.forEach((level, index) => {
+    const button = document.createElement('button');
+    button.className = 'map-node'; button.dataset.level = index;
+    button.style.left = `${level.map[0]}%`; button.style.top = `${level.map[1]}%`;
+    const unlocked = progress.isUnlocked(index), done = progress.bestPages[index] !== null;
+    button.disabled = !unlocked;
+    button.classList.toggle('completed', done); button.classList.toggle('selected', index === selectedLevel);
+    button.setAttribute('aria-pressed', String(index === selectedLevel));
+    button.setAttribute('aria-label', `Уровень ${index + 1}: ${level.name}. ${done ? 'Пройден.' : unlocked ? 'Доступен.' : 'Сначала пройди предыдущий уровень.'}`);
+    const marker = document.createElement('span'); marker.className = 'node-marker'; marker.textContent = done ? '✓' : unlocked ? index + 1 : '×';
+    const label = document.createElement('span'); label.className = 'node-label'; label.textContent = level.short;
+    const stars = document.createElement('span'); stars.className = 'node-pages'; stars.textContent = done ? '★'.repeat(progress.bestPages[index]) + '☆'.repeat(3 - progress.bestPages[index]) : unlocked ? '☆☆☆' : 'ЗАКРЫТО';
+    button.append(marker, label, stars);
+    button.addEventListener('click', () => { selectedLevel = index; renderMap(); $('play-level').focus({ preventScroll: true }); });
+    nodes.append(button);
+  });
+  drawHeroCards();
+  $('map-summary').textContent = `${HEROES.find(h => h.id === progress.hero).name} · Пройдено ${progress.completed}/${LEVELS.length} · Страниц ${progress.bestPages.reduce((sum, n) => sum + (n ?? 0), 0)}/12${progress.completed === LEVELS.length ? ' · Гравити Фолз спасён!' : ''}`;
+  $('brief-title').textContent = LEVELS[selectedLevel].name;
+  $('brief-story').textContent = LEVELS[selectedLevel].story;
+  $('save-status').textContent = progress.saved ? 'Прогресс сохраняется после завершения уровня.' : 'Сохранение в браузере недоступно. Прогресс хранится до закрытия страницы.';
+  $('play-level').textContent = progress.bestPages[selectedLevel] === null ? 'Начать уровень' : 'Пройти ещё раз';
+}
+
+function showMap() {
+  if (!ready) return;
+  game.phase = 'menu'; game.paused = false;
+  selectedLevel = Math.min(progress.unlocked, selectedLevel);
+  $('arcade').classList.add('map-mode');
+  $('scene-label').textContent = 'КАРТА ПРИКЛЮЧЕНИЙ';
+  $('campaign-map').hidden = false;
+  $('pause-menu').hidden = true;
+  $('result').hidden = true;
+  $('pause').disabled = true;
+  clearInput(); renderMap(); syncMusic();
+  $('play-level').focus({ preventScroll: true });
+}
+
+function showMenu() {
+  mode = 'arcade'; game = new Game({ onEvent: effect });
+  combatView();
+  setScene(scene);
+  $('result').hidden = true; $('pause-menu').hidden = true;
+  $('menu').hidden = false; $('shade').hidden = false; $('hud').hidden = true;
+  $('pause').disabled = true;
+  $('campaign-start').focus({ preventScroll: true });
 }
 
 function togglePause(value) {
@@ -122,29 +272,25 @@ function togglePause(value) {
 }
 
 $('start').addEventListener('click', start);
-$('restart').addEventListener('click', start);
+$('restart').addEventListener('click', () => {
+  if (mode === 'arcade') start();
+  else if (levelWon && game.levelIndex === LEVELS.length - 1) showMap();
+  else startCampaign(game.levelIndex + (levelWon ? 1 : 0));
+});
+$('campaign-start').addEventListener('click', () => { selectedLevel = progress.unlocked; showMap(); });
+$('open-map').addEventListener('click', showMap);
+$('pause-map').addEventListener('click', showMap);
+$('map-menu').addEventListener('click', showMenu);
+$('play-level').addEventListener('click', () => startCampaign());
+document.querySelectorAll('[data-hero]').forEach(button => button.addEventListener('click', () => {
+  progress.selectHero(button.dataset.hero); renderMap();
+}));
 $('resume').addEventListener('click', () => togglePause(false));
 $('pause').addEventListener('click', () => togglePause());
-$('back-menu').addEventListener('click', () => {
-  game.phase = 'menu';
-  game.paused = false;
-  game.resetFighters();
-  $('result').hidden = true;
-  $('menu').hidden = false;
-  $('shade').hidden = false;
-  $('hud').hidden = true;
-  $('pause').disabled = true;
-  $('start').focus({ preventScroll: true });
-});
+$('back-menu').addEventListener('click', () => mode === 'campaign' ? showMap() : showMenu());
 for (const name of ['day', 'night']) {
   $(name).addEventListener('click', () => {
-    scene = name;
-    for (const choice of ['day', 'night']) {
-      $(choice).classList.toggle('selected', choice === name);
-      $(choice).setAttribute('aria-pressed', String(choice === name));
-    }
-    $('scene-label').textContent = scene === 'day' ? 'ДНЕВНОЕ ДОДЗЁ' : 'НОЧНОЕ ДОДЗЁ';
-    syncMusic();
+    setScene(name);
   });
 }
 $('sound').addEventListener('click', async () => {
@@ -169,18 +315,18 @@ $('fullscreen').addEventListener('click', async () => {
 window.addEventListener('keydown', event => {
   if (event.target instanceof HTMLSelectElement || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.code === 'KeyP' || event.code === 'Escape') {
-    if (!event.repeat && !['menu', 'matchEnd'].includes(game.phase)) { event.preventDefault(); togglePause(); }
+    if (!event.repeat && isActive()) { event.preventDefault(); togglePause(); }
     return;
   }
-  if (bindings[event.code] && !['menu', 'matchEnd'].includes(game.phase) && !game.paused) {
+  if (bindings[event.code] && isActive() && !game.paused) {
     event.preventDefault();
     keyboard.add(event.code);
   }
 });
 window.addEventListener('keyup', event => keyboard.delete(event.code));
-window.addEventListener('blur', () => { clearInput(); if (!['menu', 'matchEnd'].includes(game.phase)) togglePause(true); });
+window.addEventListener('blur', () => { clearInput(); if (isActive()) togglePause(true); });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { clearInput(); if (!['menu', 'matchEnd'].includes(game.phase)) togglePause(true); }
+  if (document.hidden) { clearInput(); if (isActive()) togglePause(true); }
   syncMusic();
 });
 document.querySelectorAll('[data-control]').forEach(button => {
@@ -228,40 +374,61 @@ function background(foreground = false) {
 }
 
 function drawFighter(f, index) {
-  if (fighterArt[index]) drawFighterSprite(ctx, f, fighterArt[index], elapsed);
+  if (index === 1 && mode === 'campaign' && !game.enemyActive) return;
+  const art = artById(index === 0 ? progress.hero : mode === 'campaign' ? game.enemyArt : 'dr-karate');
+  if (art) drawFighterSprite(ctx, f, art, elapsed, mode === 'campaign' && game.level ? game.level.length : 640);
 }
 
 let lastAnnouncement = '';
 function updateHud() {
   for (const [i, name] of ['player', 'cpu'].entries()) {
-    $(name + '-health').style.width = `${game.fighters[i].hp}%`;
+    $(name + '-health').style.width = `${game.fighters[i].hp / game.fighters[i].maxHp * 100}%`;
     $(name + '-hp').textContent = game.fighters[i].hp;
     [...$(name + '-rounds').children].forEach((dot, j) => dot.classList.toggle('won', j < game.wins[i]));
   }
   $('timer').textContent = String(Math.ceil(game.time)).padStart(2, '0');
   $('round').textContent = `ROUND ${String(game.round).padStart(2, '0')}`;
+  $('player-name').textContent = artById(progress.hero)?.name ?? 'ДИППЕР';
+  $('cpu-name').textContent = 'DR. KARATE';
   let announcement = '';
   if (!game.paused) {
     if (game.phase === 'countdown') announcement = game.phaseTime > 0.75 ? `РАУНД ${game.round}` : 'В БОЙ!';
     if (game.phase === 'roundEnd') announcement = game.roundWinner === -1 ? 'НИЧЬЯ' : game.roundWinner === 0 ? 'РАУНД ЗА ТОБОЙ' : 'РАУНД ЗА ДОКТОРОМ';
   }
+  if (mode === 'campaign' && game.level) {
+    $('timer').textContent = `${Math.min(100, Math.round(game.fighters[0].x / (game.level.length - 70) * 100))}%`;
+    $('round').textContent = 'ПУТЬ';
+    $('cpu-name').textContent = game.enemyActive ? game.enemyName : 'ПУТЬ СВОБОДЕН';
+    $('cpu-hp').textContent = game.enemyActive ? game.fighters[1].hp : '—';
+    $('journal-count').textContent = `Страницы: ${game.collected.size} / 3`;
+    $('encounter-count').textContent = `Противники: ${game.enemyIndex} / ${game.level.enemies.length}`;
+    $('mission').textContent = elapsed < toastUntil ? toast : game.enemyActive ? 'Победи противника, чтобы пройти дальше' : 'Двигайся вправо · собирай страницы дневника';
+    if (!game.paused) announcement = game.phase === 'countdown' ? (game.phaseTime > 0.6 ? `ЭТАП ${game.levelIndex + 1}` : 'ВПЕРЁД!') : game.phase === 'encounterEnd' ? 'ПУТЬ ОТКРЫТ' : '';
+  }
   if (announcement !== lastAnnouncement) { $('announcement').textContent = announcement; lastAnnouncement = announcement; }
-  if (ready) $('status').textContent = game.paused ? 'ПАУЗА · P — ПРОДОЛЖИТЬ' : game.phase === 'menu' ? '1 ИГРОК · ПРОТИВ КОМПЬЮТЕРА' : game.phase === 'matchEnd' ? 'ПОЕДИНОК ЗАВЕРШЁН' : `ДО ДВУХ ПОБЕД · ${game.wins[0]} : ${game.wins[1]}`;
+  if (ready) $('status').textContent = game.paused ? 'ПАУЗА · P — ПРОДОЛЖИТЬ' : !$('campaign-map').hidden ? `КАРТА · ${progress.completed} / 4 УРОВНЯ` : game.phase === 'menu' ? 'ВЫБЕРИ ПРИКЛЮЧЕНИЕ ИЛИ БЫСТРЫЙ БОЙ' : mode === 'campaign' ? `ЭТАП ${game.levelIndex + 1} · СТРАНИЦЫ ${game.collected.size}/3` : game.phase === 'matchEnd' ? 'ПОЕДИНОК ЗАВЕРШЁН' : `ДО ДВУХ ПОБЕД · ${game.wins[0]} : ${game.wins[1]}`;
 }
 
 function draw(dt) {
   ctx.save();
   if (shake > 0 && !game.paused) { ctx.translate(Math.round((Math.random() - 0.5) * shake), 0); shake = Math.max(0, shake - dt * 25); }
-  background();
+  const adventure = mode === 'campaign' && game.level && worldArt;
+  camera = adventure ? Math.max(0, Math.min(game.level.length - 640, game.fighters[0].x - 230)) : 0;
+  if (adventure && game.level.terrain < 3) drawWorldBackground(ctx, game, worldArt.stages, camera);
+  else background();
+  ctx.save();
+  ctx.translate(-Math.round(camera), 0);
+  if (adventure) drawWorldObjects(ctx, game, elapsed);
   // Fighters remain visible in the attract screen, behind the menu.
   game.fighters.forEach(drawFighter);
-  background(true);
   for (const p of particles) {
     ctx.fillStyle = p.color;
     ctx.globalAlpha = Math.max(0, p.life / 0.25);
     ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
   }
   ctx.globalAlpha = 1;
+  ctx.restore();
+  if (!adventure || game.level.terrain === 3) background(true);
   ctx.restore();
 }
 
@@ -291,6 +458,8 @@ async function load() {
     // Both fighter sheets and stage assets must be ready before combat starts.
     const fighterPromise = loadFighterArt();
     fighterPromise.catch(() => {}); // Handled together with the stage load below.
+    const worldPromise = loadWorldArt();
+    worldPromise.catch(() => {});
     const response = await fetch(new URL('./assets/sprites.json', import.meta.url));
     if (!response.ok) throw new Error(`Manifest HTTP ${response.status}`);
     const manifest = await response.json();
@@ -304,11 +473,14 @@ async function load() {
       return [key, { ...data, image }];
     }));
     fighterArt = await fighterPromise;
+    worldArt = await worldPromise;
     sprites = Object.fromEntries(images);
     ready = true;
     $('start').disabled = false;
-    $('start').innerHTML = 'Начать поединок <span>↗</span>';
-    $('loading-status').textContent = 'БЕЗ МОНЕТ. БЕЗ УСТАНОВКИ. ПРОСТО ИГРАЙ.';
+    $('campaign-start').disabled = false;
+    $('open-map').disabled = false;
+    $('start').textContent = 'Быстрый бой';
+    $('loading-status').textContent = '3 ГЕРОЯ · 4 УРОВНЯ · ПРОГРЕСС СОХРАНЯЕТСЯ';
   } catch (error) {
     console.error('Cannot load arena:', error);
     $('start').textContent = 'Арена не загрузилась';

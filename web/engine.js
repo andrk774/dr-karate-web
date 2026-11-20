@@ -5,8 +5,8 @@ export const ATTACKS = Object.freeze({
 });
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-function fighter(x, facing) {
-  return { x, y: 0, vy: 0, facing, hp: 100, attack: null, attackTime: 0,
+export function createFighter(x, facing) {
+  return { x, y: 0, vy: 0, facing, hp: 100, maxHp: 100, attack: null, attackTime: 0,
     connected: false, stun: 0, blocking: false, moving: false, walk: 0 };
 }
 
@@ -19,11 +19,12 @@ export class Game {
     this.paused = false;
     this.difficulty = 'normal';
     this.round = 1;
+    this.bounds = { left: 35, right: 605 };
     this.resetFighters();
   }
 
   resetFighters() {
-    this.fighters = [fighter(220, 1), fighter(420, -1)];
+    this.fighters = [createFighter(220, 1), createFighter(420, -1)];
     this.time = 60;
     this.aiWait = 0.6;
     this.aiGuard = false;
@@ -46,7 +47,7 @@ export class Game {
   }
 
   pause(value = !this.paused) {
-    if (!['menu', 'matchEnd'].includes(this.phase)) this.paused = value;
+    if (!['menu', 'matchEnd', 'levelEnd'].includes(this.phase)) this.paused = value;
   }
 
   ai(dt) {
@@ -94,7 +95,7 @@ export class Game {
       f.y += f.vy * dt;
       if (f.y >= 0) { f.y = 0; f.vy = 0; }
     }
-    f.x = clamp(f.x, 35, 605);
+    f.x = clamp(f.x, this.bounds.left, this.bounds.right);
     if (f.attack) {
       f.attackTime += dt;
       if (f.attackTime >= ATTACKS[f.attack].duration) f.attack = null;
@@ -111,7 +112,7 @@ export class Game {
     defender.hp = Math.max(0, defender.hp - (blocked ? 1 : a.damage));
     defender.stun = blocked ? 0.07 : 0.2;
     if (!blocked) defender.attack = null;
-    defender.x = clamp(defender.x + attacker.facing * (blocked ? 4 : 12), 35, 605);
+    defender.x = clamp(defender.x + attacker.facing * (blocked ? 4 : 12), this.bounds.left, this.bounds.right);
     this.freeze = 0.055;
     this.onEvent({ type: blocked ? 'block' : 'hit', x: defender.x, y: FLOOR + defender.y - 48, direction: attacker.facing });
   }
@@ -151,7 +152,7 @@ export class Game {
     // Grounded fighters cannot pass through each other; jumping can cross sides.
     if (Math.abs(p.y - c.y) < 55 && Math.abs(p.x - c.x) < 34) {
       const sign = p.x <= c.x ? 1 : -1;
-      const center = clamp((p.x + c.x) / 2, 52, 588);
+      const center = clamp((p.x + c.x) / 2, this.bounds.left + 17, this.bounds.right - 17);
       p.x = center - sign * 17;
       c.x = center + sign * 17;
     }

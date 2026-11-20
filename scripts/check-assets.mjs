@@ -23,7 +23,9 @@ for (const definition of FIGHTER_ART) {
   assert.equal(png.readUInt32BE(20) % 3, 0, `Three rows: ${definition.id}`);
   assert.equal(definition.anchors.length, 12, `Frame anchors: ${definition.id}`);
 }
-for (const file of ['index.html', 'style.css', 'game.js', 'engine.js', 'fighters.js', 'favicon.svg', 'assets/DrKarate1.mp3', 'assets/DrKarate2.mp3']) {
+const stages = await readFile(new URL('assets/adventure/stages.png', root));
+assert.equal(stages.readUInt32BE(20) % 3, 0, 'Three panorama rows');
+for (const file of ['index.html', 'style.css', 'campaign.css', 'game.js', 'engine.js', 'fighters.js', 'campaign.js', 'world.js', 'favicon.svg', 'assets/DrKarate1.mp3', 'assets/DrKarate2.mp3', 'assets/adventure/map.png', 'assets/adventure/stages.png']) {
   assert.ok((await stat(new URL(file, root))).size > 0, `Empty resource: ${file}`);
 }
-console.log(`Verified ${required.length} stage frames, 2 RGBA fighter sheets and all page/audio resources.`);
+console.log(`Verified ${required.length} stage frames, ${FIGHTER_ART.length} RGBA fighter sheets, campaign art and all page/audio resources.`);
